@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <stdarg.h>
 
+#define DEBUG 1
+
 #define I_NOP 0
 #define I_LOAD 1
 #define I_DLOAD 2
@@ -32,6 +34,7 @@ void error_at_line(int status, int errnum, char * fname, unsigned int lineno, ch
   va_start(args, format);
   vfprintf(stderr, format, args);
   va_end(args);
+  fputc('\n', stderr);
   if(status) exit(status);
 }
 
@@ -45,7 +48,7 @@ void strip_comments(char * line) {
   }
 }
 
-char tolower(char c) {
+int tolower(int c) {
   return c >= 'A' && c <= 'Z' ? c + 'a' - 'A' : c;
 }
 
@@ -97,6 +100,7 @@ int compile(char * line, uint16_t * code) {
   uint32_t arg = -1;
   int i;
   for(i = 0; tok != NULL; i++) {
+    printf("%s\n", tok);
     if(i == 0) {
        ret |= get_op(tok, &op);
     }else if(i == 1) {
@@ -104,6 +108,7 @@ int compile(char * line, uint16_t * code) {
     }else{
       return 0;
     }
+    tok = strtok(NULL, " ");
   }
   code[0] = op;
   code[1] = (op == I_DLOAD || (op >= I_JUMP && op <= I_JNE) ? (arg >> 4)&0xF : 0) << 4;
@@ -157,7 +162,7 @@ int main(int argc, char** argv) {
   uint16_t code;
   while(fgets(line, 80, fin)!=NULL) {
     linenum++;
-    if(compile(line, &code))
+    if(compile(line, &code)) {
       fwrite(&code, 1, sizeof(code), fout);
     } else {
       //printf("Error in line %d: %s", ln, line);
